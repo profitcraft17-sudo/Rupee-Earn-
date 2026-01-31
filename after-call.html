@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Call Summary - Rupee Earn</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root { --primary: #FF5722; --bg: #1a1a1a; --card: #2d2d2d; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
+        body { background: var(--bg); color: white; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+        /* Header & Duration */
+        .header { padding: 25px; border-bottom: 1px solid #333; display: flex; align-items: center; justify-content: space-between; }
+        .call-info b { font-size: 18px; display: block; color: #fff; }
+        .call-info span { font-size: 13px; color: #2ecc71; font-weight: 600; }
+        .close-btn { font-size: 22px; color: #666; cursor: pointer; }
+
+        /* Main Action Button (High Click Area) */
+        .main-action { padding: 20px; }
+        .big-btn { 
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            padding: 18px; border-radius: 12px; text-align: center;
+            font-weight: 700; font-size: 16px; cursor: pointer;
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+        }
+
+        /* Flashlight & Balance Section */
+        .utility-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 0 20px 20px; }
+        .util-card { 
+            background: var(--card); padding: 15px; border-radius: 12px; 
+            text-align: center; border: 1px solid #3d3d3d;
+        }
+        .util-card i { font-size: 20px; color: #f1c40f; margin-bottom: 8px; display: block; }
+        .util-card span { font-size: 12px; color: #bbb; display: block; }
+        .util-card b { font-size: 14px; color: #fff; }
+
+        /* Blinking Arrow Logic */
+        .arrow-indicator { text-align: center; padding: 10px; margin-top: auto; }
+        .arrow-indicator p { font-size: 13px; color: #f1c40f; font-weight: 600; margin-bottom: 5px; }
+        .arrow-down { 
+            font-size: 28px; color: #f1c40f; 
+            animation: bounce 1s infinite; 
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); opacity: 1; }
+            50% { transform: translateY(10px); opacity: 0.5; }
+        }
+
+        /* AD SECTION - STICKY BOTTOM */
+        .ad-container { 
+            background: #000; padding: 15px 5px; 
+            display: flex; justify-content: center; 
+            border-top: 2px solid #333;
+            border-top-left-radius: 20px; border-top-right-radius: 20px;
+        }
+
+        /* Fake Loading for Button */
+        #loading-text { display: none; font-size: 14px; color: #aaa; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="call-info">
+            <b>Private Number</b>
+            <span><i class="fa-solid fa-phone-slash"></i> Call Ended (<span id="live-timer">00:00</span>)</span>
+        </div>
+        <i class="fa fa-times close-btn" onclick="window.close()"></i>
+    </div>
+
+    <div class="main-action">
+        <div class="big-btn" onclick="handleDetailsClick()">
+            <i class="fa-solid fa-id-card"></i> View Contact Details
+        </div>
+        <center><div id="loading-text">Fetching details... Please wait.</div></center>
+    </div>
+
+    <div class="utility-grid">
+        <div class="util-card" onclick="toggleFlash()">
+            <i class="fa-solid fa-bolt"></i>
+            <span>Flashlight</span>
+            <b id="flash-status">OFF</b>
+        </div>
+        <div class="util-card">
+            <i class="fa-solid fa-wallet"></i>
+            <span>Wallet Balance</span>
+            <b id="user-balance">Loading...</b>
+        </div>
+    </div>
+
+    <div class="arrow-indicator">
+        <p>REWARD AVAILABLE BELOW</p>
+        <div class="arrow-down"><i class="fa-solid fa-angles-down"></i></div>
+    </div>
+
+    <div class="ad-container">
+        <script type="text/javascript">
+            atOptions = {
+                'key' : '8ed433b6a73433049c1eff46d35e9854',
+                'format' : 'iframe',
+                'height' : 250,
+                'width' : 300,
+                'params' : {}
+            };
+        </script>
+        <script type="text/javascript" src="https://www.highperformanceformat.com/8ed433b6a73433049c1eff46d35e9854/invoke.js"></script>
+    </div>
+
+    <script>
+        // --- LIVE TIMER LOGIC (Call Duration Fix) ---
+        let seconds = 0;
+        function updateTimer() {
+            seconds++;
+            let mins = Math.floor(seconds / 60);
+            let secs = seconds % 60;
+            document.getElementById('live-timer').innerText = 
+                (mins < 10 ? "0" + mins : mins) + ":" + 
+                (secs < 10 ? "0" + secs : secs);
+        }
+        setInterval(updateTimer, 1000); // Har second update hoga
+
+        // --- FIREBASE CONFIGURATION ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyC5CblS_QukB4MX1e16nLedARao6qSqVHw",
+            authDomain: "rupee-earn-dc35d.firebaseapp.com",
+            databaseURL: "https://rupee-earn-dc35d-default-rtdb.firebaseio.com",
+            projectId: "rupee-earn-dc35d",
+            appId: "1:282775294940:web:89ab4b95626d091a1f7519"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const userPhone = localStorage.getItem('userPhone');
+
+        // --- REAL-TIME BALANCE FETCH ---
+        if (userPhone) {
+            db.ref('users/' + userPhone + '/balance').on('value', (snap) => {
+                const bal = snap.val() || "0.00";
+                document.getElementById('user-balance').innerText = "₹" + bal;
+            });
+        } else {
+            document.getElementById('user-balance').innerText = "₹0.00";
+        }
+
+        // --- SMART LINK LOGIC ---
+        function handleDetailsClick() {
+            document.getElementById('loading-text').style.display = 'block';
+            setTimeout(() => {
+                window.location.href = "https://www.effectivegatecpm.com/i6hg6jtn1m?key=77d6a8f83d481c0d3bd0dfc4a010be4d";
+            }, 1500);
+        }
+
+        // --- FLASH LIGHT LOGIC ---
+        let flash = false;
+        function toggleFlash() {
+            flash = !flash;
+            document.getElementById('flash-status').innerText = flash ? "ON" : "OFF";
+            document.getElementById('flash-status').style.color = flash ? "#2ecc71" : "#fff";
+        }
+    </script>
+</body>
+</html>

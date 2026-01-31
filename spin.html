@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Lucky Spin - Rupee Earn</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root { --primary: #FF5722; --dark: #2c3e50; --gold: #FFD700; --success: #4CAF50; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background: #f4f7fe; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow-x: hidden; padding-bottom: 100px; }
+
+        .header { width: 100%; background: #fff; padding: 12px 15px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 8px rgba(0,0,0,0.06); position: sticky; top: 0; z-index: 1000; }
+        .header b { font-size: 16px; color: var(--dark); flex: 1; text-align: center; margin-right: 25px; }
+
+        .stats-container { width: 92%; display: flex; gap: 12px; margin-top: 15px; }
+        .stat-card { background: #fff; flex: 1; padding: 12px; border-radius: 15px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.04); border-bottom: 3px solid var(--primary); }
+        .stat-card small { font-size: 10px; color: #888; display: block; margin-bottom: 2px; }
+        .stat-card b { font-size: 18px; color: #333; }
+
+        .wheel-wrapper { position: relative; width: 300px; height: 300px; margin: 30px auto; display: flex; justify-content: center; align-items: center; }
+        .pointer { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-top: 25px solid #333; z-index: 100; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.2)); }
+        
+        #wheel {
+            width: 280px; height: 280px; border-radius: 50%; border: 6px solid #333;
+            position: relative; overflow: hidden; transition: transform 4s cubic-bezier(0.15, 0, 0.15, 1);
+            background: conic-gradient(
+                #2c3e50 0deg 45deg, #FFD700 45deg 90deg, 
+                #2c3e50 90deg 135deg, #FFD700 135deg 180deg,
+                #2c3e50 180deg 225deg, #FFD700 225deg 270deg,
+                #2c3e50 270deg 315deg, #FFD700 315deg 360deg
+            );
+        }
+        .sector { position: absolute; width: 100%; height: 100%; text-align: center; font-weight: 800; padding-top: 25px; color: #fff; font-size: 16px; }
+        .sector:nth-child(even) { color: #333; }
+
+        .btn-spin { background: linear-gradient(135deg, #FF5722, #FF8A65); color: #fff; border: none; padding: 14px 0; border-radius: 30px; font-size: 16px; font-weight: 800; margin-top: 20px; width: 75%; box-shadow: 0 6px 15px rgba(255, 87, 34, 0.3); cursor: pointer; transition: 0.3s; z-index: 10; }
+        .btn-spin:disabled { background: #bbb !important; box-shadow: none; opacity: 0.8; }
+
+        .ad-hint { font-size: 12px; color: #555; margin-top: 15px; font-weight: 600; background: #fff; padding: 5px 15px; border-radius: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+
+        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; align-items: center; justify-content: center; z-index: 9999; backdrop-filter: blur(5px); }
+        .popup { background: #fff; padding: 30px 20px; border-radius: 25px; width: 85%; max-width: 320px; text-align: center; }
+        .pop-btn { background: var(--primary); color: #fff; border: none; width: 100%; padding: 12px; border-radius: 12px; font-weight: bold; margin-top: 20px; font-size: 15px; cursor: pointer; }
+
+        /* FIXED NAVIGATION JUGAD */
+        .bottom-nav { position: fixed; bottom: 0; width: 100%; background: #fff; display: flex; justify-content: space-around; padding: 12px 0; box-shadow: 0 -5px 15px rgba(0,0,0,0.1); height: 75px; z-index: 5000; border-top: 1px solid #eee; }
+        .nav-link { text-decoration: none; color: #aaa; font-size: 11px; text-align: center; flex: 1; }
+        .nav-link i { font-size: 22px; display: block; margin-bottom: 4px; }
+        .nav-link.active { color: var(--primary); font-weight: 800; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <i class="fa fa-arrow-left" onclick="history.back()"></i>
+        <b>LUCKY SPIN WHEEL</b>
+        <i class="fa fa-wallet"></i>
+    </div>
+
+    <div class="stats-container">
+        <div class="stat-card"><small>Daily Spins</small><b id="s-left">0/15</b></div>
+        <div class="stat-card"><small>Total Balance</small><b id="s-earn">₹0.00</b></div>
+    </div>
+
+    <div class="wheel-wrapper">
+        <div class="pointer"></div>
+        <div id="wheel">
+            <div class="sector" style="transform: rotate(22.5deg)">₹50</div>
+            <div class="sector" style="transform: rotate(67.5deg)">₹0</div>
+            <div class="sector" style="transform: rotate(112.5deg)">₹45</div>
+            <div class="sector" style="transform: rotate(157.5deg)">₹2</div>
+            <div class="sector" style="transform: rotate(202.5deg)">₹15</div>
+            <div class="sector" style="transform: rotate(247.5deg)">₹0</div>
+            <div class="sector" style="transform: rotate(292.5deg)">₹35</div>
+            <div class="sector" style="transform: rotate(337.5deg)">₹3</div>
+        </div>
+    </div>
+
+    <button class="btn-spin" id="spin-btn" onclick="handleSpinFlow()">SPIN NOW</button>
+    <div class="ad-hint" id="timer-text">Complete 15 Spins Today</div>
+
+    <div class="overlay" id="popBox">
+        <div class="popup">
+            <h1 id="p-icon" style="font-size: 50px; margin-bottom: 15px;"></h1>
+            <h2 id="p-title"></h2>
+            <p id="p-msg" style="color: #666; margin-top: 8px; font-size: 14px;"></p>
+            <button class="pop-btn" onclick="closePop()">Continue</button>
+        </div>
+    </div>
+
+    <nav class="bottom-nav">
+        <a href="index.html" class="nav-link"><i class="fa fa-home"></i>Home</a>
+        <a href="spin.html" class="nav-link active"><i class="fa fa-sync"></i>Spin</a>
+        <a href="survey.html" class="nav-link"><i class="fa-solid fa-square-poll-vertical"></i>Survey</a>
+        <a href="profile.html" class="nav-link"><i class="fa fa-user"></i>Profile</a>
+    </nav>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyC5CblS_QukB4MX1e16nLedARao6qSqVHw",
+            authDomain: "rupee-earn-dc35d.firebaseapp.com",
+            databaseURL: "https://rupee-earn-dc35d-default-rtdb.firebaseio.com",
+            projectId: "rupee-earn-dc35d",
+            appId: "1:282775294940:web:89ab4b95626d091a1f7519"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const userPhone = localStorage.getItem('userPhone') || "9369807791";
+
+        let isSpinning = false;
+        let isOnCooldown = false;
+        let totalDone = 0;
+        let currentRotation = 0;
+
+        const prizes = [50, 0, 45, 2, 15, 0, 35, 3];
+        const strictWinSequence = [1, 3, 5, 1, 3, 5, 1, 3, 5, 1, 3, 1, 5, 1, 1]; 
+
+        db.ref('users/' + userPhone).on('value', snap => {
+            const data = snap.val();
+            if(data) {
+                // --- 24 Ghante Reset Logic ---
+                const today = new Date().toLocaleDateString();
+                if(data.last_spin_date !== today) {
+                    db.ref('users/' + userPhone).update({ spin_count: 0, last_spin_date: today });
+                    totalDone = 0;
+                } else {
+                    totalDone = data.spin_count || 0;
+                }
+                // -----------------------------
+
+                document.getElementById('s-left').innerText = `${totalDone}/15`;
+                document.getElementById('s-earn').innerText = "₹" + (data.balance || 0).toFixed(2);
+                
+                if(totalDone >= 15) {
+                    const btn = document.getElementById('spin-btn');
+                    btn.disabled = true;
+                    btn.innerText = "LIMIT REACHED";
+                    btn.onclick = null;
+                } else if (!isSpinning && !isOnCooldown) {
+                    const btn = document.getElementById('spin-btn');
+                    btn.disabled = false;
+                    btn.innerText = "SPIN NOW";
+                    btn.onclick = handleSpinFlow;
+                }
+            }
+        });
+
+        function handleSpinFlow() {
+            if(isSpinning || totalDone >= 15 || isOnCooldown) return;
+
+            if(totalDone >= 5) {
+                startAdProcess();
+            } else {
+                startWheel();
+            }
+        }
+
+        function startAdProcess() {
+            const btn = document.getElementById('spin-btn');
+            const timerText = document.getElementById('timer-text');
+            
+            isSpinning = true; 
+            btn.disabled = true;
+            btn.innerText = "VERIFYING...";
+            
+            window.open('https://www.effectivegatecpm.com/i6hg6jtn1m?key=77d6a8f83d481c0d3bd0dfc4a010be4d', '_blank'); 
+
+            let timeLeft = 12;
+            const timer = setInterval(() => {
+                timerText.innerHTML = `<i class="fa fa-shield-check"></i> Verifying Ad View: ${timeLeft}s`;
+                btn.innerText = `WAIT ${timeLeft}s`;
+                timeLeft--;
+                
+                if(timeLeft < 0) {
+                    clearInterval(timer);
+                    timerText.innerHTML = `✅ Ad Verified!`;
+                    btn.innerText = "SPINNING...";
+                    isSpinning = false; 
+                    startWheel();
+                }
+            }, 1000);
+        }
+
+        function startWheel() {
+            if(totalDone >= 15 || isSpinning || isOnCooldown) return;
+            
+            isSpinning = true;
+            const wheel = document.getElementById('wheel');
+            const btn = document.getElementById('spin-btn');
+            btn.disabled = true;
+
+            const targetIdx = strictWinSequence[totalDone % 15];
+            const winAmt = prizes[targetIdx];
+
+            const extraDegrees = 1800; 
+            const sectionAngle = 45;
+            const stopAngle = (360 - (targetIdx * sectionAngle)) - 22.5;
+            
+            currentRotation += extraDegrees + (stopAngle - (currentRotation % 360));
+            wheel.style.transform = `rotate(${currentRotation}deg)`;
+
+            setTimeout(() => {
+                saveWin(winAmt);
+                showPop(winAmt);
+            }, 4200);
+        }
+
+        function saveWin(amt) {
+            const today = new Date().toLocaleDateString();
+            db.ref('users/' + userPhone).transaction(u => {
+                if(u) {
+                    if((u.spin_count || 0) < 15) {
+                        u.spin_count = (u.spin_count || 0) + 1;
+                        u.balance = (u.balance || 0) + amt;
+                        u.last_spin_date = today;
+                    }
+                }
+                return u;
+            });
+        }
+
+        function showPop(amt) {
+            const box = document.getElementById('popBox');
+            box.style.display = 'flex';
+            if(amt > 0) {
+                document.getElementById('p-icon').innerText = "🎊";
+                document.getElementById('p-title').innerText = "You Won!";
+                document.getElementById('p-msg').innerText = `₹${amt} added to your wallet.`;
+            } else {
+                document.getElementById('p-icon').innerText = "💔";
+                document.getElementById('p-title').innerText = "Better Luck!";
+                document.getElementById('p-msg').innerText = "Try your next spin!";
+            }
+        }
+
+        function closePop() { 
+            document.getElementById('popBox').style.display = 'none';
+            isSpinning = false;
+            
+            if (totalDone >= 5) {
+                startCooldown();
+            } else {
+                const btn = document.getElementById('spin-btn');
+                btn.disabled = false;
+                btn.innerText = "SPIN NOW";
+            }
+        }
+
+        function startCooldown() {
+            if(totalDone >= 15) return;
+            
+            isOnCooldown = true;
+            const btn = document.getElementById('spin-btn');
+            const timerText = document.getElementById('timer-text');
+            btn.disabled = true;
+
+            let cdTime = 10;
+            const cdInterval = setInterval(() => {
+                btn.innerText = `NEXT SPIN IN ${cdTime}s`;
+                timerText.innerText = `Please wait ${cdTime}s`;
+                cdTime--;
+
+                if(cdTime < 0) {
+                    clearInterval(cdInterval);
+                    isOnCooldown = false;
+                    btn.disabled = false;
+                    btn.innerText = "SPIN NOW";
+                    timerText.innerText = "Complete 15 Spins Today";
+                }
+            }, 1000);
+        }
+    </script>
+</body>
+</html>

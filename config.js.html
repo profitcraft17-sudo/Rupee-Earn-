@@ -1,0 +1,17 @@
+// Is naye code ko apni config.js mein paste karein
+const firebaseConfig = {
+  apiKey: "AIzaSyC5CblS_QukB4MX1e16nLedARao6qSqVHw",
+  authDomain: "rupee-earn-dc35d.firebaseapp.com",
+  databaseURL: "https://rupee-earn-dc35d-default-rtdb.firebaseio.com",
+  projectId: "rupee-earn-dc35d",
+  storageBucket: "rupee-earn-dc35d.firebasestorage.app",
+  messagingSenderId: "282775294940",
+  appId: "1:282775294940:web:89ab4b95626d091a1f7519",
+  measurementId: "G-RDVDRQLMY3"
+};
+
+// Initialize Firebase
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
+const db = firebase.database();

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Bank Details</title>
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root { --primary: #FF5722; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
+        body { background: #f8f9fa; padding: 20px; }
+
+        /* Header Fix with Back Arrow */
+        .header { display: flex; align-items: center; margin-bottom: 30px; padding: 10px 0; }
+        .header i { font-size: 22px; margin-right: 15px; cursor: pointer; color: #333; }
+        .header h3 { font-size: 20px; font-weight: 700; color: #333; }
+
+        .card { background: #fff; padding: 30px 25px; border-radius: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
+
+        /* Improved Spacing and Styling */
+        .input-group { margin-bottom: 25px; }
+        label { font-size: 13px; color: #666; display: block; margin-bottom: 10px; font-weight: 600; }
+        input { 
+            width: 100%; 
+            padding: 15px; 
+            border: 1.5px solid #eee; 
+            border-radius: 12px; 
+            outline: none; 
+            font-size: 14px;
+            background: #fafafa;
+            transition: 0.3s;
+        }
+        input:focus { border-color: var(--primary); background: #fff; }
+
+        .btn-save { 
+            background: var(--primary); 
+            color: #fff; 
+            border: none; 
+            width: 100%; 
+            padding: 18px; 
+            border-radius: 15px; 
+            font-weight: 700; 
+            font-size: 16px;
+            margin-top: 10px; 
+            box-shadow: 0 5px 15px rgba(255, 87, 34, 0.3);
+            cursor: pointer;
+        }
+
+        /* AD CONTAINER STYLING */
+        .ad-container {
+            margin-top: 25px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        /* Custom Popup Styling */
+        .overlay-popup { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); display:none; align-items:center; justify-content:center; z-index:2000; }
+        .popup { background:#fff; width:85%; padding:30px 20px; border-radius:25px; text-align:center; max-width: 320px; }
+        .popup h3 { margin-bottom: 10px; color: #333; }
+        .popup p { font-size: 14px; color: #666; margin-bottom: 20px; }
+        .popup button { background: var(--primary); color: #fff; border: none; padding: 12px 30px; border-radius: 12px; font-weight: 700; width: 100%; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <i class="fa fa-arrow-left" onclick="location.href='profile.html'"></i>
+        <h3>Bank Details</h3>
+    </div>
+
+    <div class="card">
+        <div class="input-group">
+            <label>Account Holder Name</label>
+            <input type="text" id="name" placeholder="Enter Full Name">
+        </div>
+        <div class="input-group">
+            <label>Bank Account Number</label>
+            <input type="number" id="acc" placeholder="000000000000">
+        </div>
+        <div class="input-group">
+            <label>IFSC Code</label>
+            <input type="text" id="ifsc" placeholder="SBIN0001234">
+        </div>
+        <button class="btn-save" onclick="saveDetails()">SAVE DETAILS</button>
+    </div>
+
+    <div class="ad-container">
+        <script type="text/javascript">
+            atOptions = {
+                'key' : 'dced79a8bdaf7344e3a58e6ff49aee2c',
+                'format' : 'iframe',
+                'height' : 250,
+                'width' : 300,
+                'params' : {}
+            };
+        </script>
+        <script type="text/javascript" src="https://www.highperformanceformat.com/dced79a8bdaf7344e3a58e6ff49aee2c/invoke.js"></script>
+    </div>
+
+    <div class="overlay-popup" id="popup-overlay">
+        <div class="popup">
+            <h3 id="pop-title"></h3>
+            <p id="pop-msg"></p>
+            <button onclick="closePopup()">OKAY</button>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyC5CblS_QukB4MX1e16nLedARao6qSqVHw",
+            authDomain: "rupee-earn-dc35d.firebaseapp.com",
+            databaseURL: "https://rupee-earn-dc35d-default-rtdb.firebaseio.com",
+            projectId: "rupee-earn-dc35d",
+            appId: "1:282775294940:web:89ab4b95626d091a1f7519"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const userPhone = localStorage.getItem('userPhone');
+
+        // --- FETCH DATA ON LOAD ---
+        window.onload = function() {
+            if(userPhone) {
+                db.ref('users/' + userPhone + '/bankDetails').once('value', (snap) => {
+                    if(snap.exists()) {
+                        const data = snap.val();
+                        document.getElementById('name').value = data.name || '';
+                        document.getElementById('acc').value = data.acc || '';
+                        document.getElementById('ifsc').value = data.ifsc || '';
+                    }
+                });
+            }
+        };
+
+        function saveDetails() {
+            const details = {
+                name: document.getElementById('name').value,
+                acc: document.getElementById('acc').value,
+                ifsc: document.getElementById('ifsc').value
+            };
+            
+            if(!details.name || !details.acc || !details.ifsc) { 
+                showPopup('Missing Info', 'Please fill in all bank details before saving.'); 
+                return; 
+            }
+            
+            db.ref('users/' + userPhone + '/bankDetails').set(details).then(() => {
+                showPopup('Success', 'Bank details have been updated successfully!', true);
+            }).catch((error) => {
+                showPopup('Error', 'Something went wrong: ' + error.message);
+            });
+        }
+
+        // Custom Popup Functions
+        let shouldRedirect = false;
+        function showPopup(t, m, redirect = false) { 
+            document.getElementById('pop-title').innerText = t;
+            document.getElementById('pop-msg').innerText = m;
+            document.getElementById('popup-overlay').style.display = 'flex';
+            shouldRedirect = redirect;
+        }
+        function closePopup() { 
+            document.getElementById('popup-overlay').style.display = 'none'; 
+            if(shouldRedirect) location.href = 'profile.html';
+        }
+    </script>
+</body>
+</html>

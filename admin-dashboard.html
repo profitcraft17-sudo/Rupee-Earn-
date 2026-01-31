@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Rupee Earn</title>
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root { --primary: #FF5722; --success: #2ecc71; --error: #e74c3c; --bg: #f4f7f6; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
+        body { background: var(--bg); padding: 20px; }
+
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; background: #fff; padding: 15px 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .header h2 { color: var(--primary); font-size: 20px; }
+        .btn-logout { background: #eee; border: none; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-weight: 600; }
+
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 30px; }
+        .stat-card { background: #fff; padding: 20px; border-radius: 15px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.03); }
+        .stat-card h3 { font-size: 24px; color: #333; }
+        .stat-card p { font-size: 12px; color: #888; text-transform: uppercase; font-weight: 700; }
+
+        .request-card { background: #fff; border-radius: 20px; padding: 20px; margin-bottom: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); border-left: 5px solid var(--primary); }
+        .user-info { margin-bottom: 15px; border-bottom: 1px dashed #eee; padding-bottom: 10px; }
+        .user-info b { font-size: 16px; color: #333; }
+        .bank-details { background: #f9f9f9; padding: 12px; border-radius: 10px; font-size: 13px; color: #555; line-height: 1.6; margin-bottom: 15px; }
+        
+        .action-btns { display: flex; gap: 10px; }
+        .btn { flex: 1; border: none; padding: 12px; border-radius: 10px; font-weight: 700; cursor: pointer; transition: 0.3s; color: #fff; }
+        .btn-approve { background: var(--success); }
+        .btn-reject { background: var(--error); }
+        .btn:active { transform: scale(0.95); }
+
+        #no-requests { text-align: center; color: #bbb; margin-top: 50px; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h2><i class="fa fa-gauge"></i> Admin Panel</h2>
+        <button class="btn-logout" onclick="logout()">Logout</button>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <h3 id="pending-count">0</h3>
+            <p>Pending</p>
+        </div>
+        <div class="stat-card">
+            <h3 id="total-count">0</h3>
+            <p>Total</p>
+        </div>
+    </div>
+
+    <h4 style="margin-bottom: 15px; color: #555;">Withdrawal Requests</h4>
+    <div id="requests-container"></div>
+
+    <script>
+        // Security Check
+        if(localStorage.getItem('isAdmin') !== 'true') {
+            window.location.replace('admin-login.html');
+        }
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyC5CblS_QukB4MX1e16nLedARao6qSqVHw",
+            authDomain: "rupee-earn-dc35d.firebaseapp.com",
+            databaseURL: "https://rupee-earn-dc35d-default-rtdb.firebaseio.com",
+            projectId: "rupee-earn-dc35d",
+            appId: "1:282775294940:web:89ab4b95626d091a1f7519"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        function loadRequests() {
+            db.ref('withdrawals').on('value', (snap) => {
+                const container = document.getElementById('requests-container');
+                container.innerHTML = "";
+                let pending = 0, total = 0;
+
+                if(!snap.exists()) {
+                    container.innerHTML = "<p id='no-requests'>No requests found.</p>";
+                    return;
+                }
+
+                snap.forEach(child => {
+                    const data = child.val();
+                    const reqId = child.key;
+                    total++;
+
+                    if(data.status === 'Pending') {
+                        pending++;
+                        db.ref('users/' + data.phone + '/bankDetails').once('value', (bankSnap) => {
+                            const bank = bankSnap.val() || {};
+                            const card = `
+                                <div class="request-card" id="card-${reqId}">
+                                    <div class="user-info">
+                                        <b>Phone: ${data.phone}</b><br>
+                                        <small>Amount: ₹${data.amount} | Date: ${data.date}</small>
+                                    </div>
+                                    <div class="bank-details">
+                                        <strong>Bank Info:</strong><br>
+                                        Name: ${bank.name || 'N/A'}<br>
+                                        UPI: ${bank.upi || 'N/A'}<br>
+                                        Acc: ${bank.acc || 'N/A'}<br>
+                                        IFSC: ${bank.ifsc || 'N/A'}
+                                    </div>
+                                    <div class="action-btns">
+                                        <button class="btn btn-approve" onclick="updateStatus('${reqId}', '${data.phone}', '${data.date}', 'Success')">APPROVE</button>
+                                        <button class="btn btn-reject" onclick="updateStatus('${reqId}', '${data.phone}', '${data.date}', 'Rejected')">REJECT</button>
+                                    </div>
+                                </div>`;
+                            container.innerHTML = card + container.innerHTML;
+                        });
+                    }
+                });
+
+                document.getElementById('pending-count').innerText = pending;
+                document.getElementById('total-count').innerText = total;
+            });
+        }
+
+        // Complete Function: Sync Status + Auto Refund
+        function updateStatus(reqId, phone, reqDate, newStatus) {
+            if(!confirm("Are you sure you want to " + newStatus + " this?")) return;
+
+            // 1. Withdrawal details fetch karein (Amount nikalne ke liye)
+            db.ref('withdrawals/' + reqId).once('value', (snapshot) => {
+                const reqData = snapshot.val();
+                if(!reqData) return;
+                const refundAmount = parseFloat(reqData.amount);
+
+                // 2. Main Admin node update karein
+                db.ref('withdrawals/' + reqId).update({ status: newStatus }).then(() => {
+                    
+                    // 3. User ki history update karein (Syncing)
+                    db.ref('users/' + phone + '/history').once('value', (hSnap) => {
+                        hSnap.forEach(child => {
+                            if(child.val().date === reqDate) {
+                                child.ref.update({ status: newStatus });
+                            }
+                        });
+                    });
+
+                    // 4. Agar Rejected hai, to Paisa Wapas (Refund)
+                    if (newStatus === 'Rejected') {
+                        db.ref('users/' + phone).once('value', (uSnap) => {
+                            const userData = uSnap.val();
+                            const currentBalance = parseFloat(userData.balance || 0);
+                            const updatedBalance = currentBalance + refundAmount;
+
+                            // Balance update karein Firebase mein
+                            db.ref('users/' + phone).update({ balance: updatedBalance });
+                        });
+                        alert("Request REJECTED! ₹" + refundAmount + " refunded to user balance.");
+                    } else {
+                        alert("Request APPROVED! Status synced with user.");
+                    }
+
+                }).catch((e) => alert("Firebase Error: " + e.message));
+            });
+        }
+
+        function logout() {
+            localStorage.removeItem('isAdmin');
+            window.location.replace('admin-login.html');
+        }
+
+        loadRequests();
+    </script>
+</body>
+</html>

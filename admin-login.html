@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - Rupee Earn</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root { --primary: #FF5722; --bg: #f8f9fa; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
+        body { background: var(--bg); display: flex; align-items: center; justify-content: center; height: 100vh; }
+        
+        .login-card {
+            background: #fff;
+            padding: 30px;
+            border-radius: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+        }
+        .login-card i { font-size: 50px; color: var(--primary); margin-bottom: 20px; }
+        .login-card h2 { margin-bottom: 10px; color: #333; }
+        .login-card p { font-size: 13px; color: #777; margin-bottom: 25px; }
+
+        input {
+            width: 100%;
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 2px solid #eee;
+            border-radius: 12px;
+            outline: none;
+            transition: 0.3s;
+            font-size: 16px;
+        }
+        input:focus { border-color: var(--primary); }
+
+        button {
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            width: 100%;
+            padding: 15px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 16px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(255, 87, 34, 0.3);
+        }
+        .error-msg { color: red; font-size: 12px; margin-top: 10px; display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="login-card">
+        <i class="fa fa-user-shield"></i>
+        <h2>Admin Access</h2>
+        <p>Enter your secret password to manage withdrawals</p>
+        
+        <input type="password" id="adminPass" placeholder="Enter Admin Password">
+        <button onclick="checkAdmin()">LOGIN NOW</button>
+        <p class="error-msg" id="err">Incorrect Password! Try again.</p>
+    </div>
+
+    <script>
+        function checkAdmin() {
+            const pass = document.getElementById('adminPass').value;
+            const correctPass = "Sandeep@#$_&-+8287493677"; // Aapka bataya hua password
+
+            if(pass === correctPass) {
+                // Login Success: Session save karein
+                localStorage.setItem('isAdmin', 'true');
+                window.location.replace('admin-dashboard.html');
+            } else {
+                // Login Fail
+                document.getElementById('err').style.display = 'block';
+                document.getElementById('adminPass').value = "";
+            }
+        }
+    </script>
+</body>
+</html>

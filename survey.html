@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Rupee Earn Pro - Scratch</title>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root { --primary: #FF5722; --success: #28a745; --purple: #8E24AA; --gold: #FFD700; --dark: #2c3e50; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; -webkit-tap-highlight-color: transparent; }
+        
+        body { background: #fff; overflow-y: auto; overflow-x: hidden; min-height: 100vh; display: flex; flex-direction: column; }
+
+        .bg-layer {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
+            background-image: radial-gradient(circle at 0% 20%, #9D00FF 140px, transparent 141px),
+                              radial-gradient(circle at 100% 10%, #A3FF00 110px, transparent 111px),
+                              radial-gradient(circle at 100% 70%, #FF0044 160px, transparent 161px),
+                              radial-gradient(circle at 30% 95%, #FF9900 130px, transparent 131px);
+        }
+
+        .header-stats { display: flex; justify-content: space-between; align-items: center; padding: 12px; width: 100%; gap: 8px; z-index: 10; }
+        .stat-box {
+            background: rgba(255,255,255,0.95); padding: 8px 12px; border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08); flex: 1; display: flex;
+            align-items: center; justify-content: space-between; border: 1px solid #f0f0f0;
+        }
+        .val { color: #000; font-weight: 800; font-size: 15px; }
+
+        .card-container { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; margin-top: 5px; }
+        .premium-badge {
+            background: linear-gradient(135deg, #FFD700, #FF8C00);
+            color: #000; padding: 8px 30px; border-radius: 50px;
+            font-weight: 900; font-size: 16px; margin-bottom: 15px;
+            z-index: 20; box-shadow: 0 6px 20px rgba(255, 140, 0, 0.4);
+            border: 2.5px solid #fff; text-transform: uppercase;
+            letter-spacing: 1px; animation: badgeGlow 2s infinite alternate;
+        }
+        @keyframes badgeGlow { from { transform: scale(1); } to { transform: scale(1.05); } }
+
+        .card-frame {
+            background: #fff; width: 260px; height: 260px; border-radius: 25px;
+            padding: 10px; box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+            position: relative; border: 5px solid #fff; display: block;
+            animation: cardPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.2);
+        }
+        @keyframes cardPop { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        .card-inner {
+            width: 100%; height: 100%; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; background: #f9f9f9; 
+            border-radius: 18px; text-align: center; overflow: hidden;
+        }
+        .card-inner h2 { font-size: 55px; color: #222; font-weight: 900; line-height: 1; margin-bottom: 5px; }
+        .card-inner p { color: #555; font-weight: 700; font-size: 14px; letter-spacing: 1px; }
+
+        #scratch-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 18px; z-index: 10; touch-action: none; }
+
+        .bottom-action-area { width: 100%; padding: 10px; text-align: center; }
+        .scratch-btn {
+            background: linear-gradient(135deg, #6200ea, #d500f9); color: #fff;
+            border: none; padding: 12px 35px; border-radius: 50px; font-size: 14px;
+            font-weight: 800; cursor: pointer; box-shadow: 0 5px 15px rgba(142,36,170,0.3);
+        }
+        .remaining-text { background: rgba(0,0,0,0.7); color: #fff; padding: 5px 15px; border-radius: 20px; font-size: 11px; margin-top: 10px; display: inline-block; }
+
+        /* FIXED ADS SECTION AT BOTTOM */
+        .ads-bottom-container { width: 100%; margin-top: 20px; margin-bottom: 85px; display: flex; flex-direction: column; align-items: center; gap: 15px; }
+        .ad-slot-wrapper { width: 100%; display: flex; justify-content: center; overflow: hidden; }
+
+        .overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 10000; backdrop-filter: blur(5px); }
+        .popup { background: #fff; width: 80%; max-width: 280px; border-radius: 25px; padding: 25px; text-align: center; border: 4px solid var(--gold); }
+        .val-big { font-size: 50px; color: #8E24AA; font-weight: 900; margin: 10px 0; }
+        .collect-btn { background: #00C853; color: #fff; border: none; padding: 12px 40px; border-radius: 50px; font-size: 18px; font-weight: 900; }
+
+        .bottom-nav { position: fixed; bottom: 0; width: 100%; background: #fff; display: flex; justify-content: space-around; padding: 12px 0; box-shadow: 0 -5px 20px rgba(0,0,0,0.05); height: 75px; z-index: 1000; }
+        .nav-link { text-decoration: none; color: #bbb; font-size: 11px; text-align: center; flex: 1; transition: 0.3s; }
+        .nav-link i { font-size: 22px; display: block; margin-bottom: 4px; }
+        .nav-link.active { color: var(--primary) !important; }
+    </style>
+</head>
+<body>
+
+    <div class="bg-layer"></div>
+
+    <div class="header-stats">
+        <div class="stat-box"><span>💎 Points</span><span class="val" id="points-display">0</span></div>
+        <div class="stat-box"><span>💰 <span id="money-display">₹0.00</span></span></div>
+    </div>
+
+    <div class="card-container">
+        <div class="premium-badge" id="card-label">CASHBACK CARD</div>
+        <div id="card-holder"></div>
+    </div>
+
+    <div class="bottom-action-area">
+        <button class="scratch-btn" id="main-btn" onclick="handleCardRefresh()">NEW SCRATCH CARD</button><br>
+        <div class="remaining-text">Daily Limit: <span id="cards-left">100</span></div>
+    </div>
+
+    <div class="ads-bottom-container">
+        <div class="ad-slot-wrapper">
+            <script async="async" data-cfasync="false" src="https://pl28539110.effectivegatecpm.com/a1a77d7bcae46beab9036362a09f488d/invoke.js"></script>
+            <div id="container-a1a77d7bcae46beab9036362a09f488d"></div>
+        </div>
+
+        <div class="ad-slot-wrapper">
+            <script type="text/javascript">
+                atOptions = { 'key' : 'd6424744d96dea9afe1cfbc2452d575a', 'format' : 'iframe', 'height' : 250, 'width' : 300, 'params' : {} };
+            </script>
+            <script type="text/javascript" src="https://www.highperformanceformat.com/d6424744d96dea9afe1cfbc2452d575a/invoke.js"></script>
+        </div>
+    </div>
+
+    <div class="overlay" id="win-overlay">
+        <div class="popup">
+            <h2 style="color:#333; font-size: 22px;">WINNER!</h2>
+            <div class="val-big" id="pop-points">0</div>
+            <p style="color:#666; margin-bottom: 15px; font-weight: 600;">Points added to wallet</p>
+            <button class="collect-btn" onclick="closePopup()">COLLECT</button>
+        </div>
+    </div>
+
+    <nav class="bottom-nav">
+        <a href="index.html" class="nav-link"><i class="fa fa-home"></i>Home</a>
+        <a href="spin.html" class="nav-link"><i class="fa fa-sync"></i>Spin</a>
+        <a href="survey.html" class="nav-link active"><i class="fa-solid fa-square-poll-vertical"></i>Survey</a>
+        <a href="profile.html" class="nav-link"><i class="fa fa-user"></i>Profile</a>
+    </nav>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyC5CblS_QukB4MX1e16nLedARao6qSqVHw",
+            authDomain: "rupee-earn-dc35d.firebaseapp.com",
+            databaseURL: "https://rupee-earn-dc35d-default-rtdb.firebaseio.com",
+            projectId: "rupee-earn-dc35d",
+            storageBucket: "rupee-earn-dc35d.firebasestorage.app",
+            messagingSenderId: "282775294940",
+            appId: "1:282775294940:web:89ab4b95626d091a1f7519"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const userPhone = localStorage.getItem('userPhone');
+
+        let data = JSON.parse(localStorage.getItem('scratch_session')) || { cardsLeft: 100, lastReset: new Date().getTime(), dayCount: 1 };
+        let userBalancePoints = 0; 
+        let currentCanvas, currentCtx, isDrawing = false, isFinished = false;
+        const adsterraLink = "https://www.effectivegatecpm.com/kirvqsqgbh?key=970d264e5d33e375fe2c76b420dd2888"; 
+
+        function updateUI() {
+            document.getElementById('points-display').innerText = userBalancePoints;
+            document.getElementById('money-display').innerText = "₹" + (userBalancePoints / 100).toFixed(2);
+            document.getElementById('cards-left').innerText = data.cardsLeft;
+            if(data.cardsLeft <= 0) {
+                document.getElementById('main-btn').innerText = "TRY TOMORROW";
+                document.getElementById('main-btn').style.opacity = "0.5";
+                document.getElementById('main-btn').onclick = null;
+            }
+        }
+
+        function loadBalance() {
+            if(userPhone) {
+                db.ref('users/' + userPhone).once('value', (snap) => {
+                    if(snap.exists()) {
+                        userBalancePoints = snap.val().balance_points || 0;
+                        updateUI();
+                    }
+                });
+            }
+        }
+
+        function checkDailyReset() {
+            const now = new Date().getTime();
+            if (now - data.lastReset > 24 * 60 * 60 * 1000) {
+                data.cardsLeft = 100; data.lastReset = now; data.dayCount += 1;
+                localStorage.setItem('scratch_session', JSON.stringify(data));
+            }
+        }
+
+        function getPoints() {
+            return (data.dayCount === 1) ? Math.floor(Math.random() * 60) + 20 : Math.floor(Math.random() * 10) + 8;
+        }
+
+        function createNewCard() {
+            checkDailyReset();
+            if (data.cardsLeft <= 0) return;
+            isFinished = false;
+            const winPoints = getPoints();
+            document.getElementById('card-holder').innerHTML = `
+                <div class="card-frame" id="active-card">
+                    <div class="card-inner"><p>YOU WON</p><h2 id="win-amt">${winPoints}</h2><p>POINTS</p></div>
+                    <canvas id="scratch-canvas"></canvas>
+                </div>
+            `;
+            setupCanvas();
+        }
+
+        function setupCanvas() {
+            currentCanvas = document.getElementById('scratch-canvas');
+            currentCtx = currentCanvas.getContext('2d');
+            setTimeout(() => {
+                currentCanvas.width = currentCanvas.offsetWidth;
+                currentCanvas.height = currentCanvas.offsetHeight;
+                const colors = [['#FF3D00', '#FF9100'], ['#2979FF', '#00E5FF'], ['#00C853', '#B2FF59'], ['#D500F9', '#7C4DFF']];
+                const sel = colors[Math.floor(Math.random() * colors.length)];
+                const grad = currentCtx.createLinearGradient(0,0,currentCanvas.width, currentCanvas.height);
+                grad.addColorStop(0, sel[0]); grad.addColorStop(1, sel[1]);
+                currentCtx.fillStyle = grad;
+                currentCtx.fillRect(0,0,currentCanvas.width, currentCanvas.height);
+                currentCanvas.addEventListener('touchstart', (e) => { isDrawing = true; e.preventDefault(); }, {passive: false});
+                currentCanvas.addEventListener('touchmove', (e) => { scratch(e); e.preventDefault(); }, {passive: false});
+                window.addEventListener('touchend', () => isDrawing = false);
+            }, 50);
+        }
+
+        function scratch(e) {
+            if (!isDrawing || isFinished) return;
+            const rect = currentCanvas.getBoundingClientRect();
+            const x = (e.touches[0].pageX) - rect.left - window.scrollX;
+            const y = (e.touches[0].pageY) - rect.top - window.scrollY;
+            currentCtx.globalCompositeOperation = 'destination-out';
+            currentCtx.beginPath(); currentCtx.arc(x, y, 35, 0, Math.PI * 2); currentCtx.fill();
+            checkScratchPercent();
+        }
+
+        function checkScratchPercent() {
+            const pixels = currentCtx.getImageData(0,0,currentCanvas.width, currentCanvas.height).data;
+            let count = 0;
+            for(let i=3; i<pixels.length; i+=4) if(pixels[i] === 0) count++;
+            if(count > (pixels.length/4) * 0.45) {
+                isFinished = true;
+                currentCanvas.style.opacity = "0";
+                setTimeout(() => {
+                    document.getElementById('pop-points').innerText = document.getElementById('win-amt').innerText;
+                    document.getElementById('win-overlay').style.display = 'flex';
+                }, 300);
+            }
+        }
+
+        function closePopup() {
+            const won = parseInt(document.getElementById('pop-points').innerText);
+            document.getElementById('win-overlay').style.display = 'none';
+            if(userPhone) {
+                const userRef = db.ref('users/' + userPhone);
+                userRef.transaction((current) => {
+                    if (current) {
+                        current.balance_points = (current.balance_points || 0) + won;
+                        current.balance = (current.balance_points / 100).toFixed(2);
+                        userBalancePoints = current.balance_points;
+                    }
+                    return current;
+                }, (error, committed) => {
+                    if (committed) {
+                        data.cardsLeft -= 1;
+                        localStorage.setItem('scratch_session', JSON.stringify(data));
+                        updateUI();
+                        if (Math.random() < 0.18) { window.open(adsterraLink, '_blank'); }
+                        if(data.cardsLeft > 0) createNewCard();
+                    }
+                });
+            }
+        }
+
+        function handleCardRefresh() { if(data.cardsLeft > 0 && isFinished) createNewCard(); }
+        window.onload = () => { checkDailyReset(); loadBalance(); createNewCard(); };
+    </script>
+</body>
+</html>

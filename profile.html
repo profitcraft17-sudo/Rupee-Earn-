@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Rupee Earn - Profile & Withdraw</title>
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root { --primary: #FF5722; --bg: #f8f9fa; --success: #2ecc71; --dark: #2c3e50; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background: var(--bg); padding-bottom: 90px; overflow-x: hidden; }
+
+        .header { 
+            background: #fff; padding: 15px; display: flex; 
+            justify-content: space-between; align-items: center; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 100; 
+        }
+        .header b { color: var(--primary); font-size: 18px; font-weight: 800; }
+        .btn-record { 
+            background: #fff3e0; color: var(--primary); border: 1px solid var(--primary); 
+            padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 700; text-decoration: none;
+        }
+
+        .balance-card { 
+            background: linear-gradient(135deg, #FF5722, #d84315);
+            margin: 15px; padding: 25px; border-radius: 24px; color: #fff; text-align: center;
+            box-shadow: 0 10px 25px rgba(255, 87, 34, 0.3);
+        }
+        .balance-card h2 { font-size: 35px; margin-top: 5px; font-weight: 800; }
+
+        .bank-status-box {
+            background: #fff; margin: 0 15px; padding: 15px; border-radius: 15px;
+            display: flex; justify-content: space-between; align-items: center; border: 1px solid #eee;
+        }
+        .bank-info h4 { font-size: 14px; color: #333; }
+        .bank-info p { font-size: 11px; color: #888; }
+        .btn-edit-bank { background: #fff3e0; color: var(--primary); border: none; padding: 8px 15px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; }
+
+        .section-title { margin: 20px 15px 10px; font-size: 14px; font-weight: 700; color: #555; }
+        .withdraw-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 0 15px; }
+        .amount-card {
+            background: #fff; padding: 15px; border-radius: 18px; border: 1.5px solid #eee; text-align: center; cursor: pointer;
+        }
+        .amount-card.active { border-color: var(--primary); background: #fff3e0; }
+        .amount-card h4 { font-size: 18px; }
+        .payable { color: var(--success); font-weight: 700; font-size: 11px; display: block; margin-top: 5px; }
+
+        .btn-withdraw { 
+            background: linear-gradient(45deg, #FF5722, #FF7043); color: #fff; border: none;
+            width: calc(100% - 30px); margin: 20px 15px; padding: 16px; border-radius: 15px; font-weight: 800;
+        }
+
+        .ad-container { text-align: center; margin: 15px 0; }
+
+        .history-item { 
+            background: #fff; padding: 12px 15px; border-radius: 15px; margin: 0 15px 10px;
+            display: flex; justify-content: space-between; border-left: 4px solid #f1c40f;
+        }
+        .history-item.success { border-left-color: var(--success); }
+
+        .bottom-nav { position: fixed; bottom: 0; width: 100%; background: #fff; display: flex; justify-content: space-around; padding: 12px 0; box-shadow: 0 -5px 20px rgba(0,0,0,0.05); height: 75px; z-index: 1000; }
+        .nav-link { text-decoration: none; color: #bbb; font-size: 11px; text-align: center; flex: 1; transition: 0.3s; }
+        .nav-link i { font-size: 22px; display: block; margin-bottom: 4px; }
+        .nav-link.active { color: var(--primary); }
+
+        .overlay-popup { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); display:none; align-items:center; justify-content:center; z-index:2000; }
+        .popup { background:#fff; width:80%; padding:25px; border-radius:25px; text-align:center; max-width: 320px; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <b>My Profile</b>
+        <a href="withdraw-record.html" class="btn-record">Withdraw Record</a>
+    </div>
+
+    <div class="balance-card">
+        <small style="opacity: 0.9;">Total Earnings</small>
+        <h2 id="wallet-balance">₹0.00</h2>
+    </div>
+
+    <div class="bank-status-box">
+        <div class="bank-info">
+            <h4>Bank Details</h4>
+            <p id="bank-status-text">Not Linked</p>
+        </div>
+        <button class="btn-edit-bank" onclick="location.href='bank-details.html'">ADD/EDIT</button>
+    </div>
+
+    <p class="section-title">WITHDRAW MONEY (Min: ₹100)</p>
+    <div class="withdraw-grid">
+        <div class="amount-card" onclick="selectAmount(110, 100, this)">
+            <h4>₹110</h4>
+            <span class="payable">You Get: ₹100</span>
+        </div>
+        <div class="amount-card" onclick="selectAmount(165, 150, this)">
+            <h4>₹165</h4>
+            <span class="payable">You Get: ₹150</span>
+        </div>
+        <div class="amount-card" onclick="selectAmount(220, 200, this)">
+            <h4>₹220</h4>
+            <span class="payable">You Get: ₹200</span>
+        </div>
+        <div class="amount-card" onclick="selectAmount(330, 300, this)">
+            <h4>₹330</h4>
+            <span class="payable">You Get: ₹300</span>
+        </div>
+    </div>
+
+    <button class="btn-withdraw" id="withdrawBtn" onclick="processWithdraw()">WITHDRAW NOW</button>
+
+    <div class="ad-container">
+        <script type="text/javascript">
+            atOptions = {
+                'key' : 'dced79a8bdaf7344e3a58e6ff49aee2c',
+                'format' : 'iframe',
+                'height' : 250,
+                'width' : 300,
+                'params' : {}
+            };
+        </script>
+        <script type="text/javascript" src="https://www.highperformanceformat.com/dced79a8bdaf7344e3a58e6ff49aee2c/invoke.js"></script>
+    </div>
+
+    <p class="section-title">WITHDRAWAL HISTORY</p>
+    <div id="history-container"></div>
+
+    <nav class="bottom-nav">
+        <a href="index.html" class="nav-link"><i class="fa fa-home"></i>Home</a>
+        <a href="spin.html" class="nav-link"><i class="fa fa-sync"></i>Spin</a>
+        <a href="survey.html" class="nav-link"><i class="fa-solid fa-square-poll-vertical"></i>Survey</a>
+        <a href="profile.html" class="nav-link active"><i class="fa fa-user"></i>Profile</a>
+    </nav>
+
+    <div class="overlay-popup" id="popup-overlay">
+        <div class="popup">
+            <h3 id="pop-title"></h3>
+            <p id="pop-msg" style="margin:15px 0; font-size:13px; color: #666;"></p>
+            <button onclick="closePopup()" style="background:var(--primary); color:#fff; border:none; padding:10px 30px; border-radius:10px; font-weight: 700;">OKAY</button>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyC5CblS_QukB4MX1e16nLedARao6qSqVHw",
+            authDomain: "rupee-earn-dc35d.firebaseapp.com",
+            databaseURL: "https://rupee-earn-dc35d-default-rtdb.firebaseio.com",
+            projectId: "rupee-earn-dc35d",
+            appId: "1:282775294940:web:89ab4b95626d091a1f7519"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const userPhone = localStorage.getItem('userPhone');
+
+        if (!userPhone) window.location.replace('login.html');
+
+        let selectedWithdraw = 0, selectedPayable = 0, currentBalance = 0, hasBank = false, userData = null;
+
+        if(userPhone) {
+            db.ref('users/' + userPhone).on('value', (snap) => {
+                if(snap.exists()){
+                    userData = snap.val();
+                    currentBalance = parseFloat(userData.balance || 0);
+                    document.getElementById('wallet-balance').innerText = "₹" + currentBalance.toFixed(2);
+                    if(userData.bankDetails) {
+                        hasBank = true;
+                        document.getElementById('bank-status-text').innerText = "Linked: " + (userData.bankDetails.name || "Bank Account");
+                        document.getElementById('bank-status-text').style.color = "green";
+                    }
+                }
+            });
+            loadHistory();
+        }
+
+        function selectAmount(amt, get, el) {
+            selectedWithdraw = amt; selectedPayable = get;
+            document.querySelectorAll('.amount-card').forEach(c => c.classList.remove('active'));
+            el.classList.add('active');
+        }
+
+        async function processWithdraw() {
+            if(!hasBank) { showPopup('Error', 'Please add your Bank details first!'); return; }
+            if(selectedWithdraw === 0) { showPopup('Error', 'Please select a withdrawal amount!'); return; }
+            
+            // --- UPDATED MINIMUM LIMIT CHECK (₹100) ---
+            if(selectedWithdraw < 100) { 
+                showPopup('Error', 'Minimum withdrawal is ₹100'); 
+                return; 
+            }
+            // ------------------------------------------
+
+            if(currentBalance < selectedWithdraw) { showPopup('Error', 'Insufficient balance!'); return; }
+
+            const btn = document.getElementById('withdrawBtn');
+            btn.disabled = true;
+            btn.innerText = "PROCESSING...";
+
+            try {
+                const newBalance = currentBalance - selectedWithdraw;
+                const request = { 
+                    amount: selectedWithdraw, 
+                    payable: selectedPayable, 
+                    status: 'Pending', 
+                    date: new Date().toLocaleString() 
+                };
+                
+                await db.ref('users/' + userPhone).update({ balance: newBalance });
+                await db.ref('users/' + userPhone + '/history').push(request);
+                await db.ref('withdrawals').push({ ...request, phone: userPhone });
+
+                if (userData && userData.isFirstWithdrawal === true) {
+                    const uplinePhone = userData.referredBy;
+                    if (uplinePhone && uplinePhone !== "None") {
+                        const uplineRef = db.ref('users/' + uplinePhone + '/balance');
+                        await uplineRef.transaction((currentAmt) => {
+                            return (currentAmt || 0) + 35;
+                        });
+                        db.ref('users/' + uplinePhone + '/history').push({
+                            amount: 35,
+                            status: 'Success',
+                            date: new Date().toLocaleString(),
+                            type: 'Refer Bonus'
+                        });
+                    }
+                    await db.ref('users/' + userPhone).update({ isFirstWithdrawal: false });
+                }
+
+                showPopup('Success', 'Withdrawal request submitted!');
+            } catch (error) {
+                showPopup('Error', 'Something went wrong. Please try again.');
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "WITHDRAW NOW";
+            }
+        }
+
+        function loadHistory() {
+            db.ref('users/' + userPhone + '/history').on('value', (snap) => {
+                const container = document.getElementById('history-container');
+                container.innerHTML = "";
+                snap.forEach(child => {
+                    const item = child.val();
+                    const isBonus = item.type === 'Refer Bonus';
+                    container.innerHTML = `
+                        <div class="history-item ${item.status==='Success' || isBonus ? 'success' : ''}">
+                            <div>
+                                <b>₹${item.amount}</b> ${isBonus ? '<small style="color:green">(Refer Bonus)</small>' : ''}
+                                <br><small>${item.date}</small>
+                            </div>
+                            <span style="color:${item.status==='Pending'?'#f1c40f':'green'}">${item.status}</span>
+                        </div>` + container.innerHTML;
+                });
+            });
+        }
+
+        function showPopup(t, m) { 
+            document.getElementById('pop-title').innerText = t;
+            document.getElementById('pop-msg').innerText = m;
+            document.getElementById('popup-overlay').style.display = 'flex'; 
+        }
+        function closePopup() { document.getElementById('popup-overlay').style.display = 'none'; }
+    </script>
+</body>
+</html>

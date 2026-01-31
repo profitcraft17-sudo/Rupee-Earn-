@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Refer & Earn</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+    <style>
+        :root { --primary: #FF5722; --purple: #6200EA; --bg: #F4F7FE; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background: var(--bg); color: #333; line-height: 1.4; }
+        
+        .header { background: #fff; padding: 10px 15px; display: flex; align-items: center; gap: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 100; }
+        .header i { font-size: 16px; color: #444; cursor: pointer; }
+        .header b { font-size: 15px; color: var(--primary); font-weight: 700; text-transform: uppercase; }
+
+        .main-content { padding: 12px; max-width: 450px; margin: 0 auto; }
+        
+        .refer-card { 
+            background: linear-gradient(135deg, #6200EA 0%, #AA00FF 100%); 
+            border-radius: 18px; padding: 18px 12px; color: #fff; 
+            box-shadow: 0 8px 15px rgba(98, 0, 234, 0.2); margin-bottom: 12px;
+            position: relative; text-align: center;
+        }
+        
+        .refer-card i.gift { font-size: 35px; color: #FFD600; margin-bottom: 8px; }
+        .refer-card h2 { font-size: 19px; margin-bottom: 3px; font-weight: 800; }
+        .refer-card p { font-size: 11px; opacity: 0.9; margin-bottom: 12px; }
+        
+        .code-box { 
+            background: rgba(255, 255, 255, 0.15); border: 1.2px dashed rgba(255, 255, 255, 0.5); 
+            border-radius: 10px; padding: 10px; font-size: 21px; font-weight: 800; 
+            letter-spacing: 2px; margin-bottom: 15px; color: #fff;
+        }
+
+        .btn { 
+            display: flex; align-items: center; justify-content: center; gap: 8px; 
+            width: 85%; margin: 0 auto 8px; padding: 10px; border-radius: 25px; 
+            border: none; font-weight: 700; font-size: 13px; cursor: pointer; 
+            transition: all 0.2s; box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .btn-wa { background: #25D366; color: #fff; }
+        .btn-copy { background: #1A1A1A; color: #fff; }
+
+        .refer-note {
+            padding: 12px; background: #fff; border-radius: 10px;
+            border-left: 4px solid var(--primary); text-align: left;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.03); margin-bottom: 15px;
+        }
+        .refer-note h5 { color: #1A1A1A; font-size: 13px; margin-bottom: 2px; display: flex; align-items: center; gap: 6px; }
+        .refer-note p { font-size: 10.5px; color: #666; }
+
+        .ad-section { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 5px; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <i class="fa fa-arrow-left" onclick="window.history.back()"></i>
+    <b>Refer & Earn</b>
+</div>
+
+<div class="main-content">
+    <div class="refer-card">
+        <i class="fa fa-gift gift"></i>
+        <h2>Invite & Earn</h2>
+        <p>Earn ₹35 when your friend makes their first withdrawal!</p>
+        <div class="code-box" id="myCode">LOADING...</div>
+        <button class="btn btn-wa" onclick="handleWAShare()"><i class="fab fa-whatsapp"></i> Share on WhatsApp</button>
+        <button class="btn btn-copy" onclick="copyC()"><i class="fa fa-copy"></i> Copy Referral Code</button>
+    </div>
+
+    <div class="refer-note">
+        <h5><i class="fa fa-shield-alt"></i> Important Note:</h5>
+        <p>Ensure your friends use your code during signup to track the referral correctly.</p>
+    </div>
+
+    <div class="ad-section">
+        <div id="ad-banner-1">
+            <script type="text/javascript">
+                atOptions = {
+                    'key' : '1877a988886c77f99fbbfb3c1139c66a',
+                    'format' : 'iframe',
+                    'height' : 50,
+                    'width' : 320,
+                    'params' : {}
+                };
+            </script>
+            <script type="text/javascript" src="https://www.highperformanceformat.com/1877a988886c77f99fbbfb3c1139c66a/invoke.js"></script>
+        </div>
+
+        <div id="ad-banner-2">
+            <script type="text/javascript">
+                atOptions = {
+                    'key' : 'dced79a8bdaf7344e3a58e6ff49aee2c',
+                    'format' : 'iframe',
+                    'height' : 250,
+                    'width' : 300,
+                    'params' : {}
+                };
+            </script>
+            <script type="text/javascript" src="https://www.highperformanceformat.com/dced79a8bdaf7344e3a58e6ff49aee2c/invoke.js"></script>
+        </div>
+    </div>
+</div>
+
+<script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyC5CblS_QukB4MX1e16nLedARao6qSqVHw",
+      authDomain: "rupee-earn-dc35d.firebaseapp.com",
+      databaseURL: "https://rupee-earn-dc35d-default-rtdb.firebaseio.com",
+      projectId: "rupee-earn-dc35d",
+      appId: "1:282775294940:web:89ab4b95626d091a1f7519"
+    };
+
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const userPhone = localStorage.getItem('userPhone') || "9369807791";
+    const refCode = "RE-" + userPhone.substring(userPhone.length - 6);
+    document.getElementById('myCode').innerText = refCode;
+
+    db.ref('users/' + userPhone).update({ referralCode: refCode, lastActive: Date.now() });
+
+    function copyC() {
+        const el = document.createElement('textarea');
+        el.value = refCode;
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand('copy');
+        document.body.removeChild(el);
+        const btn = document.querySelector('.btn-copy');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fa fa-check"></i> Code Copied!';
+        setTimeout(() => { btn.innerHTML = originalText; }, 2000);
+    }
+
+    function handleWAShare() {
+        const msg = `💰 *Join Rupee Earn!* 💰\nUse my code *${refCode}* for bonus!\nLink: https://rupeeearn.com/join`;
+        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, '_blank');
+    }
+</script>
+
+</body>
+</html>
